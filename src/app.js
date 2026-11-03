@@ -94,9 +94,15 @@ app.post('/api/uploads', requireUser, upload.single('image'), async (req, res) =
   const bytes = req.file.buffer;
   const valid = (bytes[0] === 0xff && bytes[1] === 0xd8) || bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])) || (bytes.subarray(0,4).toString() === 'RIFF' && bytes.subarray(8,12).toString() === 'WEBP');
   if (!valid) throw new RequestError(400, 'The file contents are not a supported image.');
-  const form = new FormData();form.append('image', bytes.toString('base64'));form.append('key', process.env.IMGBB_API_KEY);
-  const response = await fetch('https://api.imgbb.com/1/upload', { method: 'POST', body: form, signal: AbortSignal.timeout(20000) });
-  const data = await response.json();if (!response.ok || !data.success) throw new RequestError(502, 'Image service could not upload this image. Please try again.');
+  const form = new FormData();form.append('image', bytes.toString('base64'));
+  const endpoint = new URL('https://api.imgbb.com/1/upload');
+  endpoint.searchParams.set('key', process.env.IMGBB_API_KEY.trim());
+  const response = await fetch(endpoint, { method: 'POST', body: form, signal: AbortSignal.timeout(20000) });
+  const data = await response.json();
+  if (!response.ok || !data.success) {
+    console.error('Image host rejected upload:', response.status, Number(data.error?.code) || 'unknown');
+    throw new RequestError(502, 'Image service could not upload this image. Please try again.');
+  }
   res.status(201).json({ url: data.data.url });
 });
 app.post('/api/newsletter', async (req, res) => {
