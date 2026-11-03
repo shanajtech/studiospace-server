@@ -14,6 +14,8 @@ import { requireUser, originGuard, getSession, issueToken, cookieName, cookieOpt
 import { reserve, changeBooking, RequestError } from './bookings.js';
 export const app = express();
 app.disable('x-powered-by');
+// Render terminates HTTPS at its trusted proxy before forwarding to Node.
+if (process.env.NODE_ENV === 'production') app.set('trust proxy', 1);
 app.use(helmet());
 app.use(cors({ origin: config.origin, credentials: true }));
 app.use(rateLimit({ windowMs: 60000, limit: 180, standardHeaders: 'draft-8', legacyHeaders: false }));
@@ -109,3 +111,4 @@ app.use((error,req,res,next)=>{
   console.error('Request failed:', error.name);
   res.status(500).json({ error: 'Something went wrong. Please try again shortly.' });
 });
+
