@@ -2,6 +2,14 @@
 
 Express and MongoDB backend for the StudioSpace creative workspace marketplace.
 
+**Live API:** https://studiospace-server-rcp1.onrender.com/api/health
+
+**Live website:** https://studiospace-client-dusky.vercel.app
+
+**Client source:** https://github.com/shanajtech/studiospace-client
+
+**Server source:** https://github.com/shanajtech/studiospace-server
+
 ## Features
 - Better Auth email/password and Google OAuth with MongoDB storage.
 - HTTP-only signed JWT cookie and live session checks on private API routes.
