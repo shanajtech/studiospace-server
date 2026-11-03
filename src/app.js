@@ -97,10 +97,11 @@ app.post('/api/uploads', requireUser, upload.single('image'), async (req, res) =
   const form = new FormData();form.append('image', bytes.toString('base64'));
   const endpoint = new URL('https://api.imgbb.com/1/upload');
   endpoint.searchParams.set('key', process.env.IMGBB_API_KEY.trim());
-  const response = await fetch(endpoint, { method: 'POST', body: form, signal: AbortSignal.timeout(20000) });
+  const response = await fetch(endpoint, { method: 'POST', headers: { 'User-Agent': 'StudioSpace/1.0 (+https://studiospace-client-dusky.vercel.app)', Accept: 'application/json' }, body: form, signal: AbortSignal.timeout(20000) });
   const data = await response.json();
   if (!response.ok || !data.success) {
-    console.error('Image host rejected upload:', response.status, Number(data.error?.code) || 'unknown');
+    const reason = String(data.error?.message || '').replace(/[A-Za-z0-9_-]{20,}/g, '[redacted]').slice(0,160);
+    console.error('Image host rejected upload:', response.status, Number(data.error?.code) || 'unknown', reason);
     throw new RequestError(502, 'Image service could not upload this image. Please try again.');
   }
   res.status(201).json({ url: data.data.url });
