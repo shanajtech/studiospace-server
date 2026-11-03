@@ -5,7 +5,7 @@ export const config = {
   port: Number(process.env.PORT || 4000),
   mongo: process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/studiospace',
   database: process.env.MONGODB_DB || 'studiospace',
-  origin: process.env.CLIENT_ORIGIN || 'http://127.0.0.1:3000',
-  authUrl: process.env.BETTER_AUTH_URL || 'http://127.0.0.1:3000',
+  origin: process.env.CLIENT_ORIGIN || 'http://localhost:3000',
+  authUrl: process.env.BETTER_AUTH_URL || 'http://localhost:3000',
   secret: process.env.BETTER_AUTH_SECRET || randomBytes(48).toString('hex'),
 };
