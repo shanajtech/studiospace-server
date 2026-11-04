@@ -12,6 +12,7 @@ import { config } from './config.js';
 import { categories, studioSchema, reservationSchema } from './domain.js';
 import { requireUser, originGuard, getSession, issueToken, cookieName, cookieOptions } from './security.js';
 import { reserve, changeBooking, RequestError } from './bookings.js';
+import { bookingInvoice } from './invoice.js';
 export const app = express();
 app.disable('x-powered-by');
 // Render terminates HTTPS at its trusted proxy before forwarding to Node.
@@ -81,6 +82,30 @@ app.delete('/api/studios/:id', requireUser, async (req, res) => {
 });
 app.get('/api/me/bookings', requireUser, async (req, res) => res.json(await db.collection('bookings').find({ userId: req.user.id }).sort({ createdAt: -1 }).toArray()));
 app.get('/api/me/reservations', requireUser, async (req, res) => res.json(await db.collection('bookings').find({ hostEmail: req.user.email }).sort({ createdAt: -1 }).toArray()));
+app.get('/api/me/wishlist',requireUser,async(req,res)=>{
+  const items=await db.collection('wishlist').aggregate([
+    {$match:{userId:req.user.id}},{$sort:{createdAt:-1}},
+    {$lookup:{from:'studios',let:{studioId:'$studioId'},pipeline:[{$match:{$expr:{$eq:[{$toString:'$_id'},'$$studioId']}}}],as:'studio'}},
+    {$unwind:'$studio'},{$replaceRoot:{newRoot:'$studio'}}
+  ]).toArray();res.set('Cache-Control','no-store').json(items);
+});
+app.put('/api/me/wishlist/:id',requireUser,async(req,res)=>{
+  const id=objectId(req.params.id);
+  if(!await studios.findOne({_id:id},{projection:{_id:1}}))throw new RequestError(404,'This studio is no longer available.');
+  await db.collection('wishlist').updateOne({userId:req.user.id,studioId:req.params.id},{$setOnInsert:{userId:req.user.id,studioId:req.params.id,createdAt:new Date()}},{upsert:true});
+  res.json({saved:true});
+});
+app.delete('/api/me/wishlist/:id',requireUser,async(req,res)=>{
+  objectId(req.params.id);await db.collection('wishlist').deleteOne({userId:req.user.id,studioId:req.params.id});res.json({saved:false});
+});
+app.get('/api/bookings/:id/invoice',requireUser,async(req,res)=>{
+  const booking=await db.collection('bookings').findOne({_id:objectId(req.params.id)});
+  if(!booking)throw new RequestError(404,'Booking not found.');
+  if(booking.userId!==req.user.id&&booking.hostEmail!==req.user.email)throw new RequestError(403,'This invoice belongs to another booking account.');
+  if(!['Confirmed','Completed'].includes(booking.status))throw new RequestError(409,'An invoice is available after the host confirms this reservation.');
+  const pdf=await bookingInvoice(booking);
+  res.set({'Content-Type':'application/pdf','Content-Disposition':`attachment; filename="StudioSpace-invoice-${booking._id}.pdf"`,'Cache-Control':'private, no-store'}).send(pdf);
+});
 app.post('/api/bookings', requireUser, async (req, res) => res.status(201).json(await reserve(req.user, reservationSchema.parse(req.body))));
 app.patch('/api/bookings/:id', requireUser, async (req, res) => {
   objectId(req.params.id);

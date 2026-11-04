@@ -15,6 +15,8 @@ Express and MongoDB backend for the StudioSpace creative workspace marketplace.
 - HTTP-only signed JWT cookie and live session checks on private API routes.
 - Owner-only studio creation, editing and deletion.
 - Transactional booking requests and host confirmation with overlap protection.
+- Per-user MongoDB wishlists with idempotent save/remove operations and unique indexes.
+- Private PDF booking invoices with an embedded Bengali/Latin font and authoritative stored prices.
 - Pending booking cancellation, host reservation management and completion.
 - Studio image URLs stored in MongoDB, search, categories, pricing and pagination. The frontend integrates the official PostImage upload window with automatic photo insertion.
 
@@ -37,4 +39,7 @@ Authentication: `/api/auth/*`, `GET /api/session`, `POST /api/session/logout`.
 Private: studio mutations, `/api/me/listings`, `/api/me/bookings`, `/api/me/reservations`, booking mutations and image uploads. Authenticated user identity always comes from the session rather than client input.
 
 Payments, password recovery and email verification are intentionally outside the assignment scope. Booking amounts are estimates; no money is collected.
+
+## Wishlist and invoices
+GET /api/me/wishlist, PUT /api/me/wishlist/:id and DELETE /api/me/wishlist/:id use the authenticated account ID. GET /api/bookings/:id/invoice returns an attachment only for Confirmed or Completed bookings to that booking guest or host. Pending/cancelled requests and unrelated accounts cannot download it. PDFKit embeds the bundled Noto Sans Bengali font (OFL license in assets). No payment is collected; invoices clearly state this.
 
